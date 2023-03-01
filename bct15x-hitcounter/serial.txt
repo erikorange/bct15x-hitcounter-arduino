@@ -1,0 +1,94 @@
+#include <LiquidCrystal.h>
+
+// LCD rows
+const int LCDROW1 = 0;
+const int LCDROW2 = 1;
+const int LCDROW3 = 2;
+const int LCDROW4 = 3;
+
+// I/O pins
+const int BUTTON_DOWN = 6;
+const int BUTTON_UP = 7;
+const int BUTTON_MAN = 8;
+const int BUTTON_SCAN = 9;
+const int BACKLIGHT = 13;
+
+// Definitions for button HIGH/LOW based on using pullup resistors
+const int BUTTON_OPEN = HIGH;
+const int BUTTON_CLOSED = LOW;
+
+
+
+LiquidCrystal lcd(12, 11, 10, 5, 4, 3, 2);
+
+char buffer[100];
+char closedSq[] = "GLG,,,,,,,,,,,,";
+
+int numChars = 100;
+int idx;
+bool newData;
+char rc;
+
+void setup()
+{
+  // Configure input pushbuttons
+  pinMode(BUTTON_DOWN, INPUT);
+  digitalWrite(BUTTON_DOWN, HIGH);     // turn on the built in pull-up resistor
+  
+  pinMode(BUTTON_UP, INPUT);
+  digitalWrite(BUTTON_UP, HIGH);       // turn on the built in pull-up resistor
+  
+  pinMode(BUTTON_MAN, INPUT);
+  digitalWrite(BUTTON_MAN, HIGH);      // turn on the built in pull-up resistor
+  
+  pinMode(BUTTON_SCAN, INPUT);
+  digitalWrite(BUTTON_SCAN, HIGH);     // turn on the built in pull-up resistor
+
+  // Configure backlight
+  pinMode(BACKLIGHT, OUTPUT);
+  digitalWrite(BACKLIGHT, HIGH);
+
+  
+  // define LCD as 20x4
+  lcd.begin(20, 4);
+  lcd.clear();
+
+  // Configure serial port
+  Serial.begin(19200);
+}
+
+
+void loop()
+{
+  Serial.print("GLG\r");
+  Serial.readBytesUntil('\r', buffer, 100);
+
+  if (!isSquelchClosed(buffer, closedSq))
+  {
+    int bufIdx = 0;
+    for (int y=0; y<4; y++)
+    {
+      for (int x=0; x<20; x++)
+      {
+        lcd.setCursor(x, y);
+        lcd.print(String(buffer[bufIdx]));
+        buffer[bufIdx] = ' ';
+        bufIdx++;
+      }
+    }
+  }
+}
+
+bool isSquelchClosed(char* buffer, char* sq)
+{
+  int idx = 0;
+  while (idx < 15)
+  {
+    if (buffer[idx] != sq[idx])
+    {
+      return false;
+    }
+    idx++;
+  }
+  return true;
+}
