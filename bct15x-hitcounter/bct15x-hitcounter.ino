@@ -1,6 +1,6 @@
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x27, 16, 4);
+LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 #define LCD_ROW1 0
 #define LCD_ROW2 1
@@ -9,70 +9,136 @@ LiquidCrystal_I2C lcd(0x27, 16, 4);
 
 #define bufSize 100
 char buffer[bufSize];
-bool gotResponse;
+char closedSq[] = "GLG,,,,,,,,,,,,";
+
+int idx;
+char freq[8];
+char alphaTag[17];
+
+int spinIdx;
+long mark;
+
 
 void setup()
 {
   lcd.init();
   lcd.backlight();
+  lcd.clear();
   Serial.begin(19200);
   DisplayTitle();
+  spinIdx = 0;
+  mark = millis();
+  lcd.setCursor(19, 3);
+  lcd.print("-\0");
 }
 
 void loop()
 {
   Serial.print("GLG\r");
+  clearBuffer(buffer);
+  Serial.readBytesUntil('\r', buffer, 100);
 
-  while (!recvWithEndMarker())
+  if (isValidData(buffer))
   {
-    lcd.setCursor(1, LCD_ROW1);
-    lcd.print("Waiting for data");
-    delay(200);
-    lcd.clear();
+    if (isStoppedOnChan(buffer))
+    {
+      getElement(buffer, 2, freq);
+      freq[7] = '\0';
+      lcd.setCursor(0,0);
+      lcd.print(freq);
+
+      getElement(buffer, 8, alphaTag);
+      alphaTag[16] = '\0';
+      lcd.setCursor(0,1);
+      lcd.print(alphaTag);            
+    }
   }
 
-  lcd.clear();
-  lcd.setCursor(1, LCD_ROW2);
-  lcd.print("Got data");
-
-  for (int i = 0; i<18; i++)
+  if (millis() - mark > 250)
   {
-    lcd.setCursor(i+1, LCD_ROW3);
-    lcd.print(buffer[i]);
+    mark = millis();
+    spinIdx = 1 - spinIdx;
+    lcd.setCursor(19, 3);
+    if (spinIdx)
+    {
+      lcd.print("+\0");
+    }
+    else
+    {
+      lcd.print("-\0");
+    }
   }
-  delay(2000);
-    
-  lcd.clear();
-  delay(2000);
 }
 
-bool recvWithEndMarker() {
-    bool done = false;
-    int idx = 0;
-    char endMarker = '\r';
-    char rc;
-    
-    if (Serial.available() == 0)
+void clearBuffer(char* buf)
+{
+  for (int i = 0; i < bufSize; i++)
+  {
+    buf[i] = '\0';
+  }
+}
+
+bool isStoppedOnChan(char* buf)
+{
+  if (strcmp(buf, closedSq))
+  {
+    return true;
+  }
+  return false;
+}
+
+bool isValidData(char* scannerData)
+{
+	int count = 0;
+	for (int i = 0; i < strlen(scannerData); i++)
+	{
+		if (scannerData[i] == ',')
+		{
+			count++;
+		}
+	}
+
+	return (count == 12);
+}
+
+void getElement(char* scannerData, int elementIdx, char* element)
+{
+	int idx;
+	int commaNum;
+	int commaCount;
+
+	idx = 0;
+	commaNum = elementIdx - 1;
+	commaCount = 0;
+	while (commaCount != commaNum)
+	{
+		if (scannerData[idx] == ',')
+		{
+			commaCount++;
+		}
+		idx++;
+	}
+
+	elementIdx = 0;
+	while (scannerData[idx] != ',')
+	{
+		element[elementIdx++] = scannerData[idx++];
+	}
+	return;
+}
+
+bool isSquelchClosed(char* buffer, char* sq)
+{
+  int idx = 0;
+  while (idx < 15)
+  {
+    if (buffer[idx] != sq[idx])
     {
       return false;
     }
-
-    while (Serial.available() > 0 && done == false) {
-        rc = Serial.read();
-
-        if (rc != endMarker) {
-            buffer[idx] = rc;
-            idx++;
-            if (idx >= bufSize) {
-                idx = bufSize - 1;
-            }
-        }
-        else {
-            buffer[idx] = '\0';
-            done = true;
-        }
-    }
-    return true;
+    idx++;
+  }
+  return true;
 }
 
 // Display the opening title
@@ -84,6 +150,6 @@ void DisplayTitle()
   lcd.print("Version 1.0.0");
   lcd.setCursor(2, LCD_ROW3);
   lcd.print("(c) Erik Orange");
-  delay(2000);
+  delay(1000);
   lcd.clear();
 }
