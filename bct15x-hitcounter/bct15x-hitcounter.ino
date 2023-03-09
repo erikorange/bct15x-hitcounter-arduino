@@ -9,12 +9,11 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 #define bufSize 100
 char buffer[bufSize];
-char closedSq[] = "GLG,,,,,,,,,,,,";
 
-int idx;
+
 char freq[8];
 char alphaTag[17];
-
+bool gotHit;
 int spinIdx;
 long mark;
 
@@ -27,6 +26,7 @@ void setup()
   Serial.begin(19200);
   DisplayTitle();
   spinIdx = 0;
+  gotHit = false;
   mark = millis();
   lcd.setCursor(19, 3);
   lcd.print("-\0");
@@ -40,17 +40,26 @@ void loop()
 
   if (isValidData(buffer))
   {
-    if (isStoppedOnChan(buffer))
+    if (!isScanning(buffer))
     {
-      getElement(buffer, 2, freq);
-      freq[7] = '\0';
-      lcd.setCursor(0,0);
-      lcd.print(freq);
+      if (!gotHit && isSquelchOpen(buffer))
+      {
+        gotHit = true;
+        lcd.clear();
 
-      getElement(buffer, 8, alphaTag);
-      alphaTag[16] = '\0';
-      lcd.setCursor(0,1);
-      lcd.print(alphaTag);            
+        getFreq(buffer, freq);
+        lcd.setCursor(0,0);
+        lcd.print(freq);
+
+        getAlphaTag(buffer, alphaTag);
+        lcd.setCursor(0,1);
+        lcd.print(alphaTag);               
+      }
+
+      if (gotHit && !isSquelchOpen(buffer))
+      {
+        gotHit = false;        
+      }
     }
   }
 
@@ -78,13 +87,14 @@ void clearBuffer(char* buf)
   }
 }
 
-bool isStoppedOnChan(char* buf)
+bool isScanning(char* buf)
 {
+  static char closedSq[] = "GLG,,,,,,,,,,,,";
   if (strcmp(buf, closedSq))
   {
-    return true;
+    return false;
   }
-  return false;
+  return true;
 }
 
 bool isValidData(char* scannerData)
@@ -99,6 +109,22 @@ bool isValidData(char* scannerData)
 	}
 
 	return (count == 12);
+}
+
+
+void getFreq(char* buffer, char* freq)
+{
+      getElement(buffer, 2, freq);
+      freq[7] = '\0';
+}
+
+void getAlphaTag(char* buffer, char* tag)
+{
+  for (int i = 0; i < 17; i++)    // clear array so short tags don't have long tag leftovers
+  {
+    tag[i] = '\0';
+  }
+  getElement(buffer, 8, tag);
 }
 
 void getElement(char* scannerData, int elementIdx, char* element)
@@ -127,21 +153,18 @@ void getElement(char* scannerData, int elementIdx, char* element)
 	return;
 }
 
-bool isSquelchClosed(char* buffer, char* sq)
+bool isSquelchOpen(char* buffer)
 {
-  int idx = 0;
-  while (idx < 15)
+  char sqFlag[1];
+  
+  getElement(buffer, 9, sqFlag);
+  if (sqFlag[0] == '1')
   {
-    if (buffer[idx] != sq[idx])
-    {
-      return false;
-    }
-    idx++;
+    return true;
   }
-  return true;
+  return false;
 }
 
-// Display the opening title
 void DisplayTitle()
 {
   lcd.setCursor(1, LCD_ROW1);
