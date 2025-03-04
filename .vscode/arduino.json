@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:uno",
+    "port": "COM4",
+    "programmer": "avrisp",
+    "sketch": "bct15x-hitcounter\\bct15x-hitcounter.ino"
+}
