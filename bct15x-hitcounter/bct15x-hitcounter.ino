@@ -7,16 +7,19 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 #define LCD_ROW3 2
 #define LCD_ROW4 3
 
-#define bufSize 100
-char buffer[bufSize];
+#define BUFSIZE 100
+#define FREQ_LEN 8
+#define TAG_LEN 17
+#define SYSNAME_LEN 17
 
+char buffer[BUFSIZE];
 
-char freq[8];
-char alphaTag[17];
+char freq[FREQ_LEN];
+char alphaTag[TAG_LEN];
+char sysName[SYSNAME_LEN];
 bool gotHit;
 int spinIdx;
 long mark;
-
 
 void setup()
 {
@@ -53,7 +56,11 @@ void loop()
 
         getAlphaTag(buffer, alphaTag);
         lcd.setCursor(0,1);
-        lcd.print(alphaTag);               
+        lcd.print(alphaTag);
+
+        getSysName(buffer, sysName);
+        lcd.setCursor(0,2);
+        lcd.print(sysName);                       
       }
 
       if (gotHit && !isSquelchOpen(buffer))
@@ -81,7 +88,7 @@ void loop()
 
 void clearBuffer(char* buf)
 {
-  for (int i = 0; i < bufSize; i++)
+  for (int i = 0; i < BUFSIZE; i++)
   {
     buf[i] = '\0';
   }
@@ -107,7 +114,6 @@ bool isValidData(char* scannerData)
 			count++;
 		}
 	}
-
 	return (count == 12);
 }
 
@@ -115,16 +121,25 @@ bool isValidData(char* scannerData)
 void getFreq(char* buffer, char* freq)
 {
       getElement(buffer, 2, freq);
-      freq[7] = '\0';
+      freq[FREQ_LEN-1] = '\0';
 }
 
 void getAlphaTag(char* buffer, char* tag)
 {
-  for (int i = 0; i < 17; i++)    // clear array so short tags don't have long tag leftovers
+  for (int i = 0; i < TAG_LEN; i++)    // clear array so short tags don't have long tag leftovers
   {
     tag[i] = '\0';
   }
   getElement(buffer, 8, tag);
+}
+
+void getSysName(char* buffer, char* sysName)
+{
+  for (int i = 0; i < SYSNAME_LEN; i++)    // clear array so short tags don't have long tag leftovers
+  {
+    sysName[i] = '\0';
+  }
+  getElement(buffer, 6, sysName);
 }
 
 void getElement(char* scannerData, int elementIdx, char* element)
@@ -167,10 +182,10 @@ bool isSquelchOpen(char* buffer)
 
 void DisplayTitle()
 {
-  lcd.setCursor(1, LCD_ROW1);
-  lcd.print("BCT15X Hit Counter");
+  lcd.setCursor(3, LCD_ROW1);
+  lcd.print("BCT15X Display");
   lcd.setCursor(4, LCD_ROW2);
-  lcd.print("Version 1.0.0");
+  lcd.print("Version 1.0.1");
   lcd.setCursor(2, LCD_ROW3);
   lcd.print("(c) Erik Orange");
   delay(1000);
