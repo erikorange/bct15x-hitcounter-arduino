@@ -12,6 +12,9 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 #define TAG_LEN 17
 #define SYSNAME_LEN 17
 
+#define ACTIVITY_DOTS_X 15
+#define NUM_ACTIVITY_DOTS 8
+
 char buffer[BUFSIZE];
 
 char freq[FREQ_LEN];
@@ -21,6 +24,18 @@ bool gotHit;
 int spinIdx;
 long mark;
 
+
+char *activityDots[] = {
+  ".    \0",
+  " .   \0",
+  "  .  \0",
+  "   . \0",
+  "    .\0",
+  "   . \0",
+  "  .  \0",
+  " .   \0"
+};
+
 void setup()
 {
   lcd.init();
@@ -28,11 +43,11 @@ void setup()
   lcd.clear();
   Serial.begin(19200);
   DisplayTitle();
-  spinIdx = 0;
   gotHit = false;
   mark = millis();
-  lcd.setCursor(19, 3);
-  lcd.print("-\0");
+  lcd.setCursor(ACTIVITY_DOTS_X, LCD_ROW4);
+  spinIdx = 0;
+  lcd.print(activityDots[spinIdx]);
 }
 
 void loop()
@@ -73,16 +88,15 @@ void loop()
   if (millis() - mark > 250)
   {
     mark = millis();
-    spinIdx = 1 - spinIdx;
-    lcd.setCursor(19, 3);
-    if (spinIdx)
+
+    spinIdx++;
+    if (spinIdx == NUM_ACTIVITY_DOTS)
     {
-      lcd.print("+\0");
+      spinIdx = 0;
     }
-    else
-    {
-      lcd.print("-\0");
-    }
+    
+    lcd.setCursor(ACTIVITY_DOTS_X, LCD_ROW4);
+    lcd.print(activityDots[spinIdx]);
   }
 }
 
@@ -185,7 +199,7 @@ void DisplayTitle()
   lcd.setCursor(3, LCD_ROW1);
   lcd.print("BCT15X Display");
   lcd.setCursor(4, LCD_ROW2);
-  lcd.print("Version 1.0.1");
+  lcd.print("Version 1.1.0");
   lcd.setCursor(2, LCD_ROW3);
   lcd.print("(c) Erik Orange");
   delay(1000);
