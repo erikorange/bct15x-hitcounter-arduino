@@ -1,6 +1,8 @@
 #include <LiquidCrystal_I2C.h>
 
+
 LiquidCrystal_I2C lcd_1(0x27, 20, 4);
+LiquidCrystal_I2C lcd_2(0x26, 20, 4);
 
 #define LCD_ROW1 0
 #define LCD_ROW2 1
@@ -56,7 +58,13 @@ void setup()
   lcd_1.init();
   lcd_1.backlight();
   lcd_1.clear();
+
+  lcd_2.init();
+  lcd_2.backlight();
+  lcd_2.clear();
   Serial.begin(19200);
+
+
   DisplayTitle();
 
   initializeHits();
@@ -88,22 +96,22 @@ void loop()
         foundAHit = true;
         gotHit = true;
         
-        /* lcd_1.clear(); */
+        lcd_1.clear();
 
         getFreq(buffer, freq);
-        /*lcd_1.setCursor(0,LCD_ROW1);
+        lcd_1.setCursor(0,LCD_ROW1);
         lcd_1.print(freq);
         lcd_1.setCursor(8, LCD_ROW1);
-        lcd_1.print("MHz"); */
+        lcd_1.print("MHz");
 
         getAlphaTag(buffer, alphaTag);
-        /* lcd_1.setCursor(0,LCD_ROW2);
-        lcd_1.print(alphaTag); */
+        lcd_1.setCursor(0,LCD_ROW2);
+        lcd_1.print(alphaTag);
 
-        /*getSysName(buffer, sysName);
+        getSysName(buffer, sysName);
         lcd_1.setCursor(0,LCD_ROW3);
         lcd_1.print(sysName);
-        */
+      
         addToHitListfreq(freq, alphaTag);                 
       }
 
@@ -114,7 +122,7 @@ void loop()
     }
   }
 
-/*
+
   if (millis() - serialMark > 250)
   {
     serialMark = millis();
@@ -128,7 +136,7 @@ void loop()
     lcd_1.setCursor(ACTIVITY_DOTS_X, LCD_ROW4);
     lcd_1.print(activityDots[spinIdx]);
   }
-*/
+
 
   if (millis() - hitMark > 2000)
   {
@@ -142,19 +150,19 @@ void loop()
           foundNextDisplayHit = true;
 
           /* display the hit */
-          lcd_1.clear();
+          lcd_2.clear();
 
-          lcd_1.setCursor(0,LCD_ROW1);
-          lcd_1.print(hits[hitDisplayIdx].freq);
-          lcd_1.setCursor(8, LCD_ROW1);
-          lcd_1.print("MHz");
+          lcd_2.setCursor(0,LCD_ROW1);
+          lcd_2.print(hits[hitDisplayIdx].freq);
+          lcd_2.setCursor(8, LCD_ROW1);
+          lcd_2.print("MHz");
 
-          lcd_1.setCursor(0,LCD_ROW2);
-          lcd_1.print(hits[hitDisplayIdx].alphaTag);
-          lcd_1.setCursor(0,LCD_ROW3);
-          lcd_1.print("Hits: ");
-          lcd_1.setCursor(6, LCD_ROW3);
-          lcd_1.print(hits[hitDisplayIdx].count);
+          lcd_2.setCursor(0,LCD_ROW2);
+          lcd_2.print(hits[hitDisplayIdx].alphaTag);
+          lcd_2.setCursor(0,LCD_ROW3);
+          lcd_2.print("Hits: ");
+          lcd_2.setCursor(6, LCD_ROW3);
+          lcd_2.print(hits[hitDisplayIdx].count);
 
           hitDisplayIdx++;
         }
