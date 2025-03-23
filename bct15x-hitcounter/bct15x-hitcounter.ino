@@ -1,6 +1,5 @@
 #include <LiquidCrystal_I2C.h>
 
-
 LiquidCrystal_I2C lcd_1(0x27, 20, 4);
 LiquidCrystal_I2C lcd_2(0x26, 20, 4);
 
@@ -14,7 +13,7 @@ LiquidCrystal_I2C lcd_2(0x26, 20, 4);
 #define TAG_LEN 17
 #define SYSNAME_LEN 17
 
-#define HIT_ARRAY_SIZE 25
+#define HIT_ARRAY_SIZE 40
 #define HIT_ARRAY_FULL -1
 #define HIT_NOT_FOUND -1
 
@@ -36,11 +35,12 @@ char freq[FREQ_LEN];
 char alphaTag[TAG_LEN];
 char sysName[SYSNAME_LEN];
 bool gotHit;
-bool foundAHit;
+bool atLeastOneHit;
 int spinIdx;
 long serialMark, hitMark;
 int hitDisplayIdx;
 bool foundNextDisplayHit;
+int uniqueHitCount;
 
 char *activityDots[] = {
   ".    \0",
@@ -55,26 +55,18 @@ char *activityDots[] = {
 
 void setup()
 {
-  lcd_1.init();
-  lcd_1.backlight();
-  lcd_1.clear();
-
-  lcd_2.init();
-  lcd_2.backlight();
-  lcd_2.clear();
   Serial.begin(19200);
-
-
+  InitializeDisplays();
   DisplayTitle();
-
   initializeHits();
 
   gotHit = false;
-  foundAHit = false;
+  atLeastOneHit = false;
   serialMark = millis();
   hitMark = millis();
 
   hitDisplayIdx = 0;
+  uniqueHitCount = 0;
   
   lcd_1.setCursor(ACTIVITY_DOTS_X, LCD_ROW4);
   spinIdx = 0;
@@ -93,7 +85,7 @@ void loop()
     {
       if (!gotHit && isSquelchOpen(buffer))
       {
-        foundAHit = true;
+        atLeastOneHit = true;
         gotHit = true;
         
         lcd_1.clear();
@@ -138,9 +130,9 @@ void loop()
   }
 
 
-  if (millis() - hitMark > 2000)
+  if (millis() - hitMark > 1000)
   {
-    if (foundAHit)
+    if (atLeastOneHit)
     {
       foundNextDisplayHit = false;
       do
@@ -163,16 +155,17 @@ void loop()
           lcd_2.print("Hits: ");
           lcd_2.setCursor(6, LCD_ROW3);
           lcd_2.print(hits[hitDisplayIdx].count);
-
-          hitDisplayIdx++;
+          lcd_2.setCursor(0, LCD_ROW4);
+          String msg = (String)"[" + (hitDisplayIdx+1) + "/" + HIT_ARRAY_SIZE + "]";
+          lcd_2.print(msg);
+          lcd_2.setCursor(18, LCD_ROW4);
+          lcd_2.print(uniqueHitCount);
         }
-        else
+        
+        hitDisplayIdx++;
+        if (hitDisplayIdx == HIT_ARRAY_SIZE)
         {
-          hitDisplayIdx++;
-          if (hitDisplayIdx == HIT_ARRAY_SIZE)
-          {
-            hitDisplayIdx = 0;
-          }
+          hitDisplayIdx = 0;
         }
       }
       while (!foundNextDisplayHit);
@@ -309,6 +302,7 @@ void addToHitListfreq(char* freq, char* alphaTag)
       strcpy(hits[j].freq, freq);
       strcpy(hits[j].alphaTag, alphaTag);
       hits[j].count++;
+      uniqueHitCount++;
     }
   }
   else
@@ -340,13 +334,22 @@ int findNextHitSlot()
   return HIT_ARRAY_FULL;
 }
 
+void InitializeDisplays()
+{
+  lcd_1.init();
+  lcd_1.clear();
+  lcd_2.init();
+  lcd_2.clear();
+  lcd_1.backlight();
+  lcd_2.backlight();
+}
 
 void DisplayTitle()
 {
   lcd_1.setCursor(3, LCD_ROW1);
   lcd_1.print("BCT15X Display");
   lcd_1.setCursor(4, LCD_ROW2);
-  lcd_1.print("Version 1.1.0");
+  lcd_1.print("Version 1.2.0");
   lcd_1.setCursor(2, LCD_ROW3);
   lcd_1.print("(c) Erik Orange");
   delay(1000);
