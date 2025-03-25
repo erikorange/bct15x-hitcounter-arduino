@@ -130,7 +130,7 @@ void loop()
   }
 
 
-  if (millis() - hitMark > 1000)
+  if (millis() - hitMark > 1500)
   {
     if (atLeastOneHit)
     {
@@ -156,10 +156,8 @@ void loop()
           lcd_2.setCursor(6, LCD_ROW3);
           lcd_2.print(hits[hitDisplayIdx].count);
           lcd_2.setCursor(0, LCD_ROW4);
-          String msg = (String)"[" + (hitDisplayIdx+1) + "/" + HIT_ARRAY_SIZE + "]";
+          String msg = (String)"[" + (hitDisplayIdx+1) + "/" + uniqueHitCount + "]";
           lcd_2.print(msg);
-          lcd_2.setCursor(18, LCD_ROW4);
-          lcd_2.print(uniqueHitCount);
         }
         
         hitDisplayIdx++;
